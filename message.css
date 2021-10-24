@@ -1,0 +1,29 @@
+body{
+  background: lightblue;
+  text-align: center;
+  transition: 20s
+}
+
+body:hover{
+	background: #CEFFBA;
+}
+
+button{
+	background-color: #FFE0FC;
+	transition: 10s
+}
+
+button:hover{
+	background-color: #FFDEAD;
+	transform: rotate(1800deg);
+}
+
+#mainscreen {
+  position: fixed;
+  top:-40px;
+  height: 29100px;
+  width: 2000px;
+  background-color: #B6B9F0;
+  text-align:end;
+  border: #D9AEE6 5px solid;
+}

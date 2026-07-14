@@ -1,10 +1,14 @@
 {
-	"scripts": {
-		"start": "node server.js"
-	},
-	"name": "api",
-	"version": "0.0.1",
-	"dependencies": {
-		"express": "^4.17.1"
-	}
+  "name": "workspace-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A learning prototype for an Express-based messaging server.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }

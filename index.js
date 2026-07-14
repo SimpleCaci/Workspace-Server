@@ -1,63 +1,58 @@
-var fs = require('fs'); //requiring filesystem to use node's built in filesys
-var data = fs.readFileSync('allMessages.json'); // Sync so that this code is completed before the next line of code //gets the JSON file
-var allMessages = JSON.parse(data); //converts the JSON file
-console.log(allMessages);
+const fs = require('fs/promises');
+const path = require('path');
+const express = require('express');
 
-console.log('Server is Starting!');
+const app = express();
+const port = Number(process.env.PORT) || 3000;
+const messageFile = path.join(__dirname, 'allMessages.json');
 
-var express = require('express');//gets express
+app.use(express.static(path.join(__dirname, 'website')));
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '16kb' }));
 
-var bodyParser = require('body-parser');
-
-var app = express();
-
-var server = app.listen(3000, listening); //listen(port, callback-function)
-
-function listening() {
-	console.log("Listening...");
-};
-
-app.use(express.static('website'));//runs everything within the directory( i.e. website)
-
-app.use(bodyParser.urlencoded({extended: false}))
-
-app.use(bodyParser.json())
-
-app.post('/messageSend', sendMessage);
-
-function sendMessage(request, response) {
-	var data = request.body;
-	var sender = data.sender;
-	var reciever = data.receiver;
-	var message = data.message;
-	fs.writeFile('allMessages.json', JSON.stringify(message, null, 4), recorded); //Stringify is the 'opposite' of parse
-	var reply = sender + reciever + message;
-	response.send(reply);
-
-};
-/*
-app.get('/messageSend/:sender/:message/:receiver', sendMessage) // get(rest)
-
-function sendMessage(request, response) {
-	var data = request.params;
-	var sender = data.sender;
-	var reciever = data.receiver;
-	var message = data.message;
-	fs.writeFile('allMessages.json', JSON.stringify(message, null, 4), recorded); //Stringify is the 'opposite' of parse
-	var reply = sender + reciever + message;
-	response.send(reply);
+async function readMessages() {
+  try {
+    const content = await fs.readFile(messageFile, 'utf8');
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
 }
-*/
 
-function recorded(err) { //saves the message
-	console.log("Message saved...");
-};
+app.post('/messageSend', async (request, response) => {
+  const { sender, receiver, message } = request.body;
+  if (![sender, receiver, message].every((value) => typeof value === 'string' && value.trim())) {
+    return response.status(400).json({ error: 'sender, receiver, and message are required' });
+  }
 
-app.get('/messageView', viewMessage); // get(rest)
+  try {
+    const messages = await readMessages();
+    const entry = {
+      sender: sender.trim(),
+      receiver: receiver.trim(),
+      message: message.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    messages.push(entry);
+    await fs.writeFile(messageFile, JSON.stringify(messages, null, 2));
+    return response.status(201).json(entry);
+  } catch (error) {
+    console.error('Could not save message:', error.message);
+    return response.status(500).json({ error: 'Could not save message' });
+  }
+});
 
-function viewMessage(request, response) {
-	data = fs.readFileSync('allMessages.json'); // Sync so that this code is completed before the next line of code //gets the JSON file
-	allMessages = JSON.parse(data); //converts the JSON file
-	response.send(allMessages);
-	alert(allMessages);
-};
+app.get('/messageView', async (_request, response) => {
+  try {
+    return response.json(await readMessages());
+  } catch (error) {
+    console.error('Could not read messages:', error.message);
+    return response.status(500).json({ error: 'Could not read messages' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Workspace Server listening on http://localhost:${port}`);
+});
